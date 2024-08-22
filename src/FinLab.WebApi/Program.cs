@@ -16,29 +16,38 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
+app.MapGet("/bdrsummary", () =>
 {
     var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
+        new BDRSummary
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
+            "BITO39",
+            10,
+            "ITOT",
+            1,
+            5.78m,
+            112.97m,
+            65.5m
         ))
         .ToArray();
     return forecast;
 })
-.WithName("GetWeatherForecast")
+.WithName("GetBDRSummary")
 .WithOpenApi();
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+record BDRSummary(
+    DateOnly Date,
+    string Code,
+    int EquivalentFraction,
+    string RelatedAssetCode,
+    int RelatedAssetFraction,
+    decimal USDInBRL,
+    decimal RelatedAssetQuoteInUSD,
+    decimal QuoteInBRL)
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    public decimal ExpectedBDRQuoteInBRL => RelatedAssetQuoteInUSD * USDInBRL / EquivalentFraction;
+    public decimal Spread => QuoteInBRL / ExpectedBDRQuoteInBRL - 1;
 }
