@@ -1,3 +1,7 @@
+using FinLab.Domain.BDR;
+
+using YahooFinanceApi;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -36,18 +40,25 @@ app.MapGet("/bdrsummary", () =>
 .WithName("GetBDRSummary")
 .WithOpenApi();
 
+app.MapGet("/asset/{symbol}", async (HttpContext context) =>
+{
+    var symbol = context.Request.RouteValues["symbol"].ToString();
+
+    var securities = await Yahoo
+        .Symbols(symbol) //.Symbols("AAPL", "GOOG")
+        .Fields(Field.Symbol, Field.RegularMarketPrice, Field.FiftyTwoWeekHigh)
+        .QueryAsync();
+
+    var aapl = securities[symbol];
+    var price = aapl.RegularMarketPrice; // aapl[Field.RegularMarketPrice];
+
+    return new Asset(symbol, price);
+});
+
 app.Run();
 
-record BDRSummary(
-    DateOnly Date,
-    string Code,
-    int EquivalentFraction,
-    string RelatedAssetCode,
-    int RelatedAssetFraction,
-    decimal USDInBRL,
-    decimal RelatedAssetQuoteInUSD,
-    decimal QuoteInBRL)
-{
-    public decimal ExpectedBDRQuoteInBRL => RelatedAssetQuoteInUSD * USDInBRL / EquivalentFraction;
-    public decimal Spread => QuoteInBRL / ExpectedBDRQuoteInBRL - 1;
-}
+
+record Asset(
+    string Symbol,
+    double Price
+){ }
